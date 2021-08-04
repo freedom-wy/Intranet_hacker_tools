@@ -22,34 +22,32 @@ def tcp_mapping_worker(conn_receiver, conn_sender, thread_name):
         except Exception as e:
             logger.debug(thread_name)
             logger.debug(format_exc())
+            conn_receiver.close()
             break
-
         if not data:
             logger.info('No more data is received.')
+            # 无数据传输
+            conn_receiver.close()
+            conn_sender.close()
             break
-
         try:
             # 从remote_conn发出去, local_conn发到应用
             conn_sender.sendall(data)
         except Exception:
-            logger.error('Failed sending data.')
+            logger.debug(thread_name)
+            logger.debug(format_exc())
+            conn_sender.close()
             break
-
-        # logger.info('Mapping data > %s ' % repr(data))
         logger.info(
             'Mapping > %s -> %s > %d bytes, thread name is %s.' % (conn_receiver.getpeername(), conn_sender.getpeername(), len(data), thread_name))
-
-    conn_receiver.close()
-    conn_sender.close()
-
     return
 
 
 # 端口映射请求处理
 def tcp_mapping_request(local_conn, remote_ip, remote_port):
     remote_conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    remote_conn.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, True)
-    remote_conn.ioctl(socket.SIO_KEEPALIVE_VALS, (1, 60*1000, 30*1000))
+    # remote_conn.setsockopt(socket.SOL_SOCKET, socket.SO_KEEPALIVE, True)
+    # remote_conn.ioctl(socket.SIO_KEEPALIVE_VALS, (1, 60*1000, 30*1000))
     try:
         # 连接远端服务器
         remote_conn.connect((remote_ip, remote_port))
@@ -73,22 +71,21 @@ def tcp_mapping(remote_ip, remote_port, local_ip, local_port):
 
     while True:
         try:
+            # 返回客户端连接信息
             (local_conn, local_addr) = local_server.accept()
             logger.debug("客户端连接信息: {}:{}".format(local_addr[0], local_addr[1]))
         except Exception as e:
             local_server.close()
             logger.debug('Stop mapping service.')
             break
-
-        threading.Thread(target=tcp_mapping_request, args=(local_conn, remote_ip, remote_port)).start()
-
-    return
+        else:
+            threading.Thread(target=tcp_mapping_request, args=(local_conn, remote_ip, remote_port)).start()
 
 
 # 主函数
 if __name__ == '__main__':
     # CFG_REMOTE_IP = input("请输入要连接的服务端IP: ")
     # CFG_REMOTE_PORT = input("请输入要连接的PORT: ")
-    CFG_REMOTE_IP = "91.212.211.90"
-    CFG_REMOTE_PORT = "80"
+    CFG_REMOTE_IP = "8.130.55.35"
+    CFG_REMOTE_PORT = "22"
     tcp_mapping(CFG_REMOTE_IP.strip(), int(CFG_REMOTE_PORT.strip()), CFG_LOCAL_IP, CFG_LOCAL_PORT)
