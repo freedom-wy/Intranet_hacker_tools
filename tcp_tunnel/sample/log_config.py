@@ -7,7 +7,8 @@ log_conf = {
             # "format": "%(asctime)s - %(message)s"
         },
         "tcp_debug": {
-            "format": "%(asctime)s - %(pathname)s - %(lineno)s - %(name)s - %(levelname)s - %(message)s"
+            # "format": "%(asctime)s - %(pathname)s - %(lineno)s - %(name)s - %(levelname)s - %(message)s",
+            "format": "%(lineno)s - %(name)s - %(levelname)s - %(message)s"
         }
     },
     "filters": {},

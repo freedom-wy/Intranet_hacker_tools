@@ -26,10 +26,11 @@ def tcp_mapping_worker(conn_receiver, conn_sender, thread_name):
             break
         if not data:
             logger.info('No more data is received.')
+            pass
             # 无数据传输
-            conn_receiver.close()
-            conn_sender.close()
-            break
+            # conn_receiver.close()
+            # conn_sender.close()
+            # break
         try:
             # 从remote_conn发出去, local_conn发到应用
             conn_sender.sendall(data)
@@ -86,6 +87,6 @@ def tcp_mapping(remote_ip, remote_port, local_ip, local_port):
 if __name__ == '__main__':
     # CFG_REMOTE_IP = input("请输入要连接的服务端IP: ")
     # CFG_REMOTE_PORT = input("请输入要连接的PORT: ")
-    CFG_REMOTE_IP = "8.130.55.35"
-    CFG_REMOTE_PORT = "22"
+    CFG_REMOTE_IP = "47.98.165.107"
+    CFG_REMOTE_PORT = "9001"
     tcp_mapping(CFG_REMOTE_IP.strip(), int(CFG_REMOTE_PORT.strip()), CFG_LOCAL_IP, CFG_LOCAL_PORT)
