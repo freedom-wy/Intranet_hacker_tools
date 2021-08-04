@@ -28,6 +28,7 @@ def create_server():
         # 客户端连接
         try:
             new_client, client_address = server.accept()
+            print(new_client.getsockname())
         except:
             server.close()
             break

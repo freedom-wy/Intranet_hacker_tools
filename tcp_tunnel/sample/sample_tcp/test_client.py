@@ -6,6 +6,7 @@ server_ip = input("请输入服务器IP: ")
 server_port = input("请输入服务器PORT: ")
 # 连接服务器
 client.connect((server_ip, int(server_port)))
+print(client.getpeername())
 while True:
     msg = input("请输入要发送的消息: ")
     client.send(msg.encode())
