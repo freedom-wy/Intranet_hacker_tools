@@ -42,8 +42,8 @@ def _get_another_stream(num):
         num = 1
     elif num == 1:
         num = 0
-    else:
-        raise Exception('ERROR')
+    # else:
+    #     raise Exception('ERROR')
 
     while True:
         if streams[num] == 'quit':
@@ -108,10 +108,11 @@ def _server(port, num):
     while True:
         # 客户端连接
         conn, addr = srv.accept()
-        print('connected from: %s' % str(addr))
+        print('connected from: %s' % str(addr[0]))
         # streams[0] = 10001的client连接
         # streams[1] = 10002的client连接
         streams[num] = conn  # 放入本端流对象
+        logger.debug("change socket")
         s2 = _get_another_stream(num)  # 获取另一端流对象
         _xstream(num, conn, s2)
 
