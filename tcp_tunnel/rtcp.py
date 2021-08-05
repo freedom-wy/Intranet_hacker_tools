@@ -24,7 +24,6 @@ import threading
 import time
 from handle_log import logger
 
-
 streams = [None, None]  # 存放需要进行数据转发的两个数据流（都是 SocketObj 对象）
 debug = 1  # 调试状态 0 or 1
 
@@ -37,47 +36,58 @@ def _get_another_stream(num):
     """
     从streams获取另外一个流对象，如果当前为空，则等待
     """
+    logger.debug("change socket")
     # 10001的 0, 10002的1
     if num == 0:
         num = 1
     elif num == 1:
         num = 0
-    else:
-        raise Exception('ERROR')
+    # else:
+    #     raise Exception('ERROR')
 
     while True:
         if streams[num] == 'quit':
-            print('can not connect to the target, quit now!')
+            logger.debug('can not connect to the target, quit now!')
             sys.exit(1)
 
         if streams[num] is not None:
             return streams[num]
-        elif streams[num] is None and streams[num^1] is None:
-            print('stream CLOSED')
+        elif streams[num] is None and streams[num ^ 1] is None:
+            logger.debug('stream CLOSED')
             return None
         else:
             time.sleep(1)
 
 
-def _xstream(num, s1, s2):
+def _xstream(num, s1, s2, name):
     """
     交换两个流的数据
     num为当前流编号,主要用于调试目的，区分两个回路状态用。
     """
+    s1_info = None
+    s2_info = None
     try:
         while True:
+            if name == "server":
+                s1_info = s1.getsockname()
+                s2_info = s2.getsockname()
+            elif name == "client":
+                s1_info = s1.getpeername()
+                s2_info = s2.getpeername()
             # 注意，recv 函数会阻塞，直到对端完全关闭（close 后还需要一定时间才能关闭，最快关闭方法是 shutdow）
             buff = s1.recv(1024)
-            if debug > 0:
-                print('%d recv' % num)
+            logger.debug("{} {}:{} recv {} bytes data".format(name, s1_info[0], s1_info[1], len(buff)))
+            # if debug > 0:
+            #     print('%d recv' % num)
             if len(buff) == 0:  # 对端关闭连接，读不到数据
-                print('%d one closed' % num)
+                logger.debug('%d one closed' % num)
                 break
             s2.sendall(buff)
-            if debug > 0:
-                print('%d sendall' % num)
+            logger.debug("{} {}:{} send {} bytes data".format(name, s2_info[0], s2_info[1], len(buff)))
+            # if debug > 0:
+            #     print('%d sendall' % num)
     except:
-        print('%d one connect closed.' % num)
+        logger.error('%d one connect closed.' % num)
 
     try:
         s1.shutdown(socket.SHUT_RDWR)
@@ -93,7 +103,7 @@ def _xstream(num, s1, s2):
 
     streams[0] = None
     streams[1] = None
-    print('%d CLOSED' % num)
+    logger.debug('%d CLOSED' % num)
 
 
 def _server(port, num):
@@ -108,12 +118,14 @@ def _server(port, num):
     while True:
         # 客户端连接
         conn, addr = srv.accept()
-        print('connected from: %s' % str(addr))
+        # print('connected from: %s' % str(addr[0]))
+        server_info = srv.getsockname()
+        logger.debug("connect from {}, connect to {}:{}".format(addr[0], server_info[0], server_info[1]))
         # streams[0] = 10001的client连接
         # streams[1] = 10002的client连接
         streams[num] = conn  # 放入本端流对象
         s2 = _get_another_stream(num)  # 获取另一端流对象
-        _xstream(num, conn, s2)
+        _xstream(num, conn, s2, "server")
 
 
 def _connect(host, port, num):
@@ -127,23 +139,25 @@ def _connect(host, port, num):
     while True:
         if not_connet_time > try_cnt:
             streams[num] = 'quit'
-            print('not connected')
+            logger.debug('not connected')
             return None
 
+        # 创建socket客户端
         conn = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         try:
+            # 127.0.0.1:22, 222.2.2.2:10001
             conn.connect((host, port))
         except Exception:
-            print('can not connect %s:%s!' % (host, port))
+            logger.error('can not connect %s:%s!' % (host, port))
             not_connet_time += 1
             time.sleep(wait_time)
             continue
 
-        print('connected to %s:%i' % (host, port))
+        logger.debug('connected to %s:%i' % (host, port))
         streams[num] = conn  # 放入本端流对象
         s2 = _get_another_stream(num)  # 获取另一端流对象
         # conn为当前连接，s2为另一个端口连接
-        _xstream(num, conn, s2)
+        _xstream(num, conn, s2, "client")
 
 
 def main():
@@ -162,7 +176,7 @@ def main():
             tlist.append(t)
         # 客户端
         elif len(sl) == 3 and (sl[0] == 'c' or sl[0] == 'C'):  # c:host:port
-            # ./rtcp.py c:localhost:22 c:222.2.2.2:10001
+            # ./rtcp.py c:127.0.0.1:22 c:222.2.2.2:10001
             t = threading.Thread(target=_connect, args=(sl[1], int(sl[2]), i))
             tlist.append(t)
         else:

