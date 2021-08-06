@@ -11,6 +11,8 @@ def handle_new_client(s):
         if data.decode() == "EXIT":
             s.close()
             break
+        elif len(data) == 0:
+            break
         exec_cmd = os.popen(data.decode())
         result = exec_cmd.read()
         # msg = input("请输入要发送的数据: ")
